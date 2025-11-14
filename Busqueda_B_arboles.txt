@@ -1,2 +1,235 @@
-Implementa aquí la operación de búsqueda. 
-Pueden modificar la extensión del documento para que se ajuste al lenguaje de su elección y comentar estas instrucciones.
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Clase que representa un nodo en la estructura de B-árbol.
+ * Contiene las claves y las ramas (enlaces a otros nodos).
+ */
+class NodoB {
+    /**
+     * Indica si el nodo es una hoja (sin ramas) o un nodo interno.
+     */
+    protected boolean hoja;
+    
+    /**
+     * Lista de claves almacenadas en el nodo en orden ascendente.
+     */
+    protected List<Integer> claves;
+    
+    /**
+     * Lista de ramas que conectan a los nodos hijos.
+     * Solo se usa cuando el nodo no es hoja.
+     */
+    protected List<NodoB> ramas;
+    
+    /**
+     * Constructor que inicializa un nodo del B-árbol.
+     * 
+     * @param hoja Indica si el nodo es una hoja
+     */
+    public NodoB(boolean hoja) {
+        this.hoja = hoja;
+        this.claves = new ArrayList<>();
+        this.ramas = new ArrayList<>();
+    }
+    
+    /**
+     * Muestra las claves del nodo
+     */
+    public void mostrarClaves() {
+        System.out.print("[");
+        for (int i = 0; i < claves.size(); i++) {
+            System.out.print(claves.get(i));
+            if (i < claves.size() - 1) {
+                System.out.print(", ");
+            }
+        }
+        System.out.print("]");
+    }
+}
+
+/**
+ * Implementación de la estructura de datos B-árbol.
+ * Soporta operaciones de búsqueda, inserción y eliminación.
+ */
+public class BArbol {
+    /**
+     * Nodo raíz del B-árbol desde donde comienzan todas las operaciones.
+     */
+    private NodoB raiz;
+    
+    /**
+     * Grado mínimo del B-árbol que determina el número mínimo de claves por nodo.
+     * Cada nodo (excepto la raíz) debe tener al menos t-1 claves.
+     */
+    private int t;
+    
+    /**
+     * Constructor que inicializa un B-árbol con el grado mínimo especificado.
+     * 
+     * @param gradoMinimo Grado mínimo del B-árbol (t >= 2)
+     */
+    public BArbol(int gradoMinimo) {
+        this.raiz = new NodoB(true);
+        this.t = gradoMinimo;
+    }
+    
+    /**
+     * Busca una clave en el B-árbol.
+     * Realiza una búsqueda recursiva desde la raíz hasta las hojas.
+     * 
+     * @param clave Clave a buscar en el árbol
+     * @return true si la clave existe, false en caso contrario
+     */
+    public boolean buscar(int clave) {
+        return buscar(clave, raiz);
+    }
+    
+    /**
+     * Método auxiliar recursivo para buscar una clave en un nodo específico.
+     * Implementa el algoritmo estándar de búsqueda en B-árboles.
+     * 
+     * @param clave Clave a buscar
+     * @param nodo Nodo actual donde se realiza la búsqueda
+     * @return true si la clave existe en el subárbol, false en caso contrario
+     */
+    private boolean buscar(int clave, NodoB nodo) {
+        int indice = 0;
+        
+        // Recorrer las claves hasta encontrar la posición correcta
+        while (indice < nodo.claves.size() && clave > nodo.claves.get(indice)) {
+            indice++;
+        }
+        
+        // Verificar si la clave actual coincide con la buscada
+        if (indice < nodo.claves.size() && clave == nodo.claves.get(indice)) {
+            System.out.println("★ Clave " + clave + " encontrada en el nodo");
+            return true;
+        }
+        
+        // Si es nodo hoja y no se encontró, la clave no existe
+        if (nodo.hoja) {
+            System.out.println("✗ Clave " + clave + " no encontrada");
+            return false;
+        }
+        
+        // Continuar la búsqueda en la rama correspondiente
+        System.out.println("→ Buscando en rama " + indice + " del nodo");
+        return buscar(clave, nodo.ramas.get(indice));
+    }
+    
+    /**
+     * Muestra la estructura completa del B-árbol en consola.
+     * Utiliza recorrido en profundidad para visualizar todos los niveles.
+     */
+    public void mostrarArbol() {
+        System.out.println("\n=== ESTRUCTURA DEL B-ÁRBOL ===");
+        mostrarArbol(raiz, 0);
+        System.out.println("=== FIN DE ESTRUCTURA ===\n");
+    }
+    
+    /**
+     * Método auxiliar recursivo para mostrar la estructura del árbol.
+     * 
+     * @param nodo Nodo actual a mostrar
+     * @param nivel Nivel de profundidad actual en el árbol
+     */
+    private void mostrarArbol(NodoB nodo, int nivel) {
+        // Mostrar indentación según el nivel
+        for (int i = 0; i < nivel; i++) {
+            System.out.print("  ");
+        }
+        
+        // Mostrar información del nodo
+        System.out.print("Nivel " + nivel + " - ");
+        if (nodo.hoja) {
+            System.out.print("HOJA ");
+        } else {
+            System.out.print("INTERNO ");
+        }
+        
+        nodo.mostrarClaves();
+        System.out.println();
+        
+        // Mostrar recursivamente las ramas
+        if (!nodo.hoja) {
+            for (NodoB rama : nodo.ramas) {
+                mostrarArbol(rama, nivel + 1);
+            }
+        }
+    }
+    
+    /**
+     * Obtiene información general del B-árbol.
+     * 
+     * @return Cadena con información del grado y estado del árbol
+     */
+    public String obtenerInfoArbol() {
+        return "B-Árbol - Grado mínimo: " + t + 
+               ", Nodo raíz: " + (raiz.hoja ? "Hoja" : "Interno") +
+               ", Claves en raíz: " + raiz.claves.size();
+    }
+    
+    /**
+     * Método principal para pruebas de funcionalidad de búsqueda.
+     * Crea un árbol de prueba y realiza búsquedas de ejemplo.
+     * 
+     * @param args Argumentos de línea de comandos (no usados)
+     */
+    public static void main(String[] args) {
+        // Crear B-árbol con grado mínimo 3
+        BArbol arbol = new BArbol(3);
+        
+        System.out.println("=== PRUEBAS DE B-ÁRBOL - BÚSQUEDA ===");
+        System.out.println(arbol.obtenerInfoArbol());
+        
+        // Configurar manualmente un árbol de prueba
+        System.out.println("\n--- Configurando árbol de prueba ---");
+        arbol.configurarArbolPrueba();
+        
+        // Mostrar estructura inicial
+        arbol.mostrarArbol();
+        
+        // Realizar búsquedas de prueba
+        System.out.println("--- Realizando búsquedas ---");
+        arbol.buscar(10);
+        arbol.buscar(25);
+        arbol.buscar(15);
+        arbol.buscar(30);
+        arbol.buscar(5);
+    }
+    
+    /**
+     * Configura un árbol de prueba con datos de ejemplo.
+     * Método temporal para pruebas hasta implementar la inserción.
+     */
+    private void configurarArbolPrueba() {
+        // Crear un árbol simple de prueba
+        raiz.claves.add(10);
+        raiz.claves.add(20);
+        raiz.claves.add(30);
+        raiz.hoja = true;
+        
+        System.out.println("Árbol de prueba configurado con claves: 10, 20, 30");
+    }
+    
+    // Métodos getter para acceso controlado
+    
+    /**
+     * Obtiene el grado mínimo del B-árbol.
+     * 
+     * @return Grado mínimo t
+     */
+    public int getGradoMinimo() {
+        return t;
+    }
+    
+    /**
+     * Verifica si el árbol está vacío.
+     * 
+     * @return true si el árbol no tiene claves, false en caso contrario
+     */
+    public boolean estaVacio() {
+        return raiz.claves.isEmpty();
+    }
+}
