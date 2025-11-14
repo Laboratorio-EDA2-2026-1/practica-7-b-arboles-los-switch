@@ -1,2 +1,410 @@
-Implementa aquí todos los procesos necesarios para la operación de eliminación. 
-Pueden modificar la extensión del documento para que se ajuste al lenguaje de su elección y comentar estas instrucciones.
+/**
+ * Implementación completa de la estructura de datos B-árbol.
+ * Incluye operaciones de búsqueda, inserción y eliminación.
+ */
+public class BArbol {
+    /**
+     * Nodo raíz del B-árbol desde donde comienzan todas las operaciones.
+     */
+    private NodoB raiz;
+    
+    /**
+     * Grado mínimo del B-árbol que determina el número mínimo de claves por nodo.
+     * Cada nodo (excepto la raíz) debe tener al menos t-1 claves.
+     */
+    private int t;
+    
+    /**
+     * Constructor que inicializa un B-árbol con el grado mínimo especificado.
+     * 
+     * @param gradoMinimo Grado mínimo del B-árbol (t >= 2)
+     */
+    public BArbol(int gradoMinimo) {
+        this.raiz = new NodoB(true);
+        this.t = gradoMinimo;
+    }
+
+    // ... (métodos de búsqueda anteriores) ...
+
+    /**
+     * Elimina una clave del B-árbol manteniendo todas las propiedades.
+     * Maneja diferentes casos según la ubicación y estado de la clave.
+     * 
+     * @param clave Clave a eliminar del árbol
+     * @return true si la clave fue eliminada, false si no existía
+     */
+    public boolean eliminar(int clave) {
+        System.out.println("\n=== INICIANDO ELIMINACIÓN DE CLAVE: " + clave + " ===");
+        
+        if (!buscar(clave)) {
+            System.out.println("✗ Eliminación fallida: clave " + clave + " no existe en el árbol");
+            return false;
+        }
+        
+        eliminar(raiz, clave);
+        
+        // Si la raíz queda vacía, hacer su primer hijo la nueva raíz
+        if (raiz.claves.isEmpty() && !raiz.hoja) {
+            System.out.println("★ Raíz vacía detectada, promocionando primer hijo como nueva raíz");
+            raiz = raiz.ramas.get(0);
+        }
+        
+        System.out.println("✓ Eliminación completada exitosamente");
+        return true;
+    }
+    
+    /**
+     * Método auxiliar recursivo para eliminar una clave del árbol.
+     * Implementa el algoritmo completo de eliminación en B-árboles.
+     * 
+     * @param nodo Nodo actual donde se realiza la eliminación
+     * @param clave Clave a eliminar
+     */
+    private void eliminar(NodoB nodo, int clave) {
+        int indice = encontrarIndiceClave(nodo, clave);
+        
+        // Caso 1: La clave está en el nodo actual
+        if (indice < nodo.claves.size() && nodo.claves.get(indice) == clave) {
+            System.out.println("★ Clave " + clave + " encontrada en posición " + indice + " del nodo");
+            
+            if (nodo.hoja) {
+                // Caso 1a: Clave en nodo hoja
+                eliminarDeHoja(nodo, indice);
+            } else {
+                // Caso 1b: Clave en nodo interno
+                eliminarDeNodoInterno(nodo, indice);
+            }
+        } else {
+            // Caso 2: La clave no está en este nodo
+            if (nodo.hoja) {
+                System.out.println("✗ Clave " + clave + " no encontrada en el árbol");
+                return;
+            }
+            
+            // Verificar si necesitamos fusionar antes de descender
+            boolean esUltimaRama = (indice == nodo.ramas.size() - 1);
+            NodoB ramaActual = nodo.ramas.get(indice);
+            
+            if (ramaActual.claves.size() < t) {
+                llenarRama(nodo, indice);
+            }
+            
+            // Actualizar índice después de posibles fusiones
+            if (esUltimaRama && indice > nodo.claves.size()) {
+                eliminar(nodo.ramas.get(indice - 1), clave);
+            } else {
+                eliminar(nodo.ramas.get(indice), clave);
+            }
+        }
+    }
+    
+    /**
+     * Encuentra el índice donde debería estar o está una clave en un nodo.
+     * 
+     * @param nodo Nodo donde buscar la clave
+     * @param clave Clave a localizar
+     * @return Índice de la clave o posición donde debería estar
+     */
+    private int encontrarIndiceClave(NodoB nodo, int clave) {
+        int indice = 0;
+        while (indice < nodo.claves.size() && clave > nodo.claves.get(indice)) {
+            indice++;
+        }
+        return indice;
+    }
+    
+    /**
+     * Elimina una clave de un nodo hoja.
+     * Caso más simple de eliminación en B-árboles.
+     * 
+     * @param nodo Nodo hoja de donde eliminar la clave
+     * @param indice Posición de la clave a eliminar
+     */
+    private void eliminarDeHoja(NodoB nodo, int indice) {
+        System.out.println("★ Eliminando clave " + nodo.claves.get(indice) + " de nodo hoja");
+        int claveEliminada = nodo.claves.remove(indice);
+        System.out.println("✓ Clave " + claveEliminada + " eliminada de hoja");
+    }
+    
+    /**
+     * Elimina una clave de un nodo interno.
+     * Maneja los subcasos de predecesor y sucesor.
+     * 
+     * @param nodo Nodo interno de donde eliminar la clave
+     * @param indice Posición de la clave a eliminar
+     */
+    private void eliminarDeNodoInterno(NodoB nodo, int indice) {
+        int clave = nodo.claves.get(indice);
+        System.out.println("★ Eliminando clave " + clave + " de nodo interno");
+        
+        NodoB ramaIzquierda = nodo.ramas.get(indice);
+        NodoB ramaDerecha = nodo.ramas.get(indice + 1);
+        
+        // Caso 2a: Rama izquierda tiene al menos t claves
+        if (ramaIzquierda.claves.size() >= t) {
+            System.out.println("→ Usando predecesor de rama izquierda");
+            int predecesor = obtenerPredecesor(ramaIzquierda);
+            nodo.claves.set(indice, predecesor);
+            eliminar(ramaIzquierda, predecesor);
+        }
+        // Caso 2b: Rama derecha tiene al menos t claves
+        else if (ramaDerecha.claves.size() >= t) {
+            System.out.println("→ Usando sucesor de rama derecha");
+            int sucesor = obtenerSucesor(ramaDerecha);
+            nodo.claves.set(indice, sucesor);
+            eliminar(ramaDerecha, sucesor);
+        }
+        // Caso 2c: Ambas ramas tienen t-1 claves, fusionar
+        else {
+            System.out.println("→ Fusionando ramas izquierda y derecha");
+            fusionar(nodo, indice);
+            eliminar(ramaIzquierda, clave);
+        }
+    }
+    
+    /**
+     * Obtiene el predecesor inmediato de una clave (máximo del subárbol izquierdo).
+     * 
+     * @param nodo Nodo desde donde comenzar la búsqueda
+     * @return Clave predecesora
+     */
+    private int obtenerPredecesor(NodoB nodo) {
+        NodoB actual = nodo;
+        while (!actual.hoja) {
+            actual = actual.ramas.get(actual.ramas.size() - 1);
+        }
+        return actual.claves.get(actual.claves.size() - 1);
+    }
+    
+    /**
+     * Obtiene el sucesor inmediato de una clave (mínimo del subárbol derecho).
+     * 
+     * @param nodo Nodo desde donde comenzar la búsqueda
+     * @return Clave sucesora
+     */
+    private int obtenerSucesor(NodoB nodo) {
+        NodoB actual = nodo;
+        while (!actual.hoja) {
+            actual = actual.ramas.get(0);
+        }
+        return actual.claves.get(0);
+    }
+    
+    /**
+     * Llena una rama que tiene menos de t-1 claves.
+     * Puede tomar una clave de hermanos o fusionar con ellos.
+     * 
+     * @param padre Nodo padre de la rama a llenar
+     * @param indice Índice de la rama a llenar
+     */
+    private void llenarRama(NodoB padre, int indice) {
+        System.out.println("★ Llenando rama " + indice + " con menos de " + t + " claves");
+        
+        // Intentar tomar clave del hermano izquierdo si existe y tiene claves suficientes
+        if (indice > 0 && padre.ramas.get(indice - 1).claves.size() >= t) {
+            System.out.println("→ Tomando clave del hermano izquierdo");
+            tomarClaveDeHermanoIzquierdo(padre, indice);
+        }
+        // Intentar tomar clave del hermano derecho si existe y tiene claves suficientes
+        else if (indice < padre.ramas.size() - 1 && padre.ramas.get(indice + 1).claves.size() >= t) {
+            System.out.println("→ Tomando clave del hermano derecho");
+            tomarClaveDeHermanoDerecho(padre, indice);
+        }
+        // Fusionar con hermano izquierdo o derecho
+        else {
+            if (indice > 0) {
+                System.out.println("→ Fusionando con hermano izquierdo");
+                fusionar(padre, indice - 1);
+            } else {
+                System.out.println("→ Fusionando con hermano derecho");
+                fusionar(padre, indice);
+            }
+        }
+    }
+    
+    /**
+     * Toma una clave del hermano izquierdo para llenar la rama actual.
+     * 
+     * @param padre Nodo padre de las ramas
+     * @param indice Índice de la rama actual
+     */
+    private void tomarClaveDeHermanoIzquierdo(NodoB padre, int indice) {
+        NodoB ramaActual = padre.ramas.get(indice);
+        NodoB hermanoIzquierdo = padre.ramas.get(indice - 1);
+        
+        // Mover clave del padre a la rama actual
+        ramaActual.claves.add(0, padre.claves.get(indice - 1));
+        
+        // Mover última clave del hermano izquierdo al padre
+        padre.claves.set(indice - 1, hermanoIzquierdo.claves.remove(hermanoIzquierdo.claves.size() - 1));
+        
+        // Mover última rama del hermano izquierdo si no es hoja
+        if (!hermanoIzquierdo.hoja) {
+            ramaActual.ramas.add(0, hermanoIzquierdo.ramas.remove(hermanoIzquierdo.ramas.size() - 1));
+        }
+    }
+    
+    /**
+     * Toma una clave del hermano derecho para llenar la rama actual.
+     * 
+     * @param padre Nodo padre de las ramas
+     * @param indice Índice de la rama actual
+     */
+    private void tomarClaveDeHermanoDerecho(NodoB padre, int indice) {
+        NodoB ramaActual = padre.ramas.get(indice);
+        NodoB hermanoDerecho = padre.ramas.get(indice + 1);
+        
+        // Mover clave del padre a la rama actual
+        ramaActual.claves.add(padre.claves.get(indice));
+        
+        // Mover primera clave del hermano derecho al padre
+        padre.claves.set(indice, hermanoDerecho.claves.remove(0));
+        
+        // Mover primera rama del hermano derecho si no es hoja
+        if (!hermanoDerecho.hoja) {
+            ramaActual.ramas.add(hermanoDerecho.ramas.remove(0));
+        }
+    }
+    
+    /**
+     * Fusiona dos ramas adyacentes a través de una clave del padre.
+     * 
+     * @param padre Nodo padre que contiene las ramas a fusionar
+     * @param indice Índice de la clave del padre que separa las ramas
+     */
+    private void fusionar(NodoB padre, int indice) {
+        NodoB ramaIzquierda = padre.ramas.get(indice);
+        NodoB ramaDerecha = padre.ramas.get(indice + 1);
+        
+        System.out.println("★ Fusionando ramas " + indice + " y " + (indice + 1));
+        
+        // Mover clave del padre a la rama izquierda
+        ramaIzquierda.claves.add(padre.claves.remove(indice));
+        
+        // Mover todas las claves de la rama derecha a la izquierda
+        ramaIzquierda.claves.addAll(ramaDerecha.claves);
+        
+        // Mover todas las ramas de la derecha a la izquierda si no son hojas
+        if (!ramaIzquierda.hoja) {
+            ramaIzquierda.ramas.addAll(ramaDerecha.ramas);
+        }
+        
+        // Eliminar la rama derecha del padre
+        padre.ramas.remove(indice + 1);
+        
+        System.out.println("✓ Fusión completada, rama derecha eliminada");
+    }
+    
+    /**
+     * Verifica la validez del B-árbol después de operaciones.
+     * 
+     * @return true si el árbol cumple con todas las propiedades B-árbol
+     */
+    public boolean verificarPropiedades() {
+        return verificarPropiedades(raiz, true);
+    }
+    
+    /**
+     * Método auxiliar recursivo para verificar propiedades del B-árbol.
+     * 
+     * @param nodo Nodo actual a verificar
+     * @param esRaiz Indica si el nodo actual es la raíz
+     * @return true si el subárbol cumple con las propiedades
+     */
+    private boolean verificarPropiedades(NodoB nodo, boolean esRaiz) {
+        // Verificar número de claves
+        if (!esRaiz && nodo.claves.size() < t - 1) {
+            System.out.println("✗ Nodo interno con menos de t-1 claves");
+            return false;
+        }
+        
+        if (nodo.claves.size() > 2 * t - 1) {
+            System.out.println("✗ Nodo con más de 2t-1 claves");
+            return false;
+        }
+        
+        // Verificar orden de claves
+        for (int i = 1; i < nodo.claves.size(); i++) {
+            if (nodo.claves.get(i) <= nodo.claves.get(i - 1)) {
+                System.out.println("✗ Claves no ordenadas correctamente");
+                return false;
+            }
+        }
+        
+        // Verificar recursivamente las ramas
+        if (!nodo.hoja) {
+            if (nodo.ramas.size() != nodo.claves.size() + 1) {
+                System.out.println("✗ Número incorrecto de ramas");
+                return false;
+            }
+            
+            for (NodoB rama : nodo.ramas) {
+                if (!verificarPropiedades(rama, false)) {
+                    return false;
+                }
+            }
+        }
+        
+        return true;
+    }
+
+    // ... (métodos de visualización y otros anteriores) ...
+
+    /**
+     * Método principal para pruebas de funcionalidad de eliminación.
+     * 
+     * @param args Argumentos de línea de comandos (no usados)
+     */
+    public static void main(String[] args) {
+        // Crear B-árbol con grado mínimo 3
+        BArbol arbol = new BArbol(3);
+        
+        System.out.println("=== PRUEBAS DE B-ÁRBOL - ELIMINACIÓN ===");
+        System.out.println(arbol.obtenerInfoArbol());
+        
+        // Configurar manualmente un árbol de prueba más complejo
+        System.out.println("\n--- Configurando árbol de prueba para eliminación ---");
+        arbol.configurarArbolPruebaEliminacion();
+        
+        // Mostrar estructura inicial
+        arbol.mostrarArbol();
+        
+        // Realizar eliminaciones de prueba
+        System.out.println("--- Realizando eliminaciones ---");
+        arbol.eliminar(25);
+        arbol.mostrarArbol();
+        
+        arbol.eliminar(20);
+        arbol.mostrarArbol();
+        
+        // Verificar propiedades después de eliminaciones
+        System.out.println("--- Verificando propiedades del árbol ---");
+        boolean propiedadesCorrectas = arbol.verificarPropiedades();
+        System.out.println("Propiedades del B-árbol: " + 
+                          (propiedadesCorrectas ? "CORRECTAS" : "INCORRECTAS"));
+    }
+    
+    /**
+     * Configura un árbol de prueba más complejo para pruebas de eliminación.
+     */
+    private void configurarArbolPruebaEliminacion() {
+        // Crear un árbol más complejo para pruebas de eliminación
+        // Este sería reemplazado por inserción automática cuando se implemente
+        raiz.claves.add(20);
+        
+        NodoB hijoIzquierdo = new NodoB(false);
+        hijoIzquierdo.claves.add(10);
+        hijoIzquierdo.claves.add(15);
+        
+        NodoB hijoDerecho = new NodoB(false);
+        hijoDerecho.claves.add(25);
+        hijoDerecho.claves.add(30);
+        hijoDerecho.claves.add(35);
+        
+        raiz.ramas.add(hijoIzquierdo);
+        raiz.ramas.add(hijoDerecho);
+        raiz.hoja = false;
+        
+        System.out.println("Árbol de prueba para eliminación configurado");
+    }
+}

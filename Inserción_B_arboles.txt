@@ -1,2 +1,398 @@
-Implementa aquí todos los procesos necesarios para la operación de inserción. 
-Pueden modificar la extensión del documento para que se ajuste al lenguaje de su elección y comentar estas instrucciones.
+/**
+ * Implementación completa de la estructura de datos B-árbol.
+ * Incluye operaciones de búsqueda, inserción y eliminación.
+ */
+public class BArbol {
+    /**
+     * Nodo raíz del B-árbol desde donde comienzan todas las operaciones.
+     */
+    private NodoB raiz;
+    
+    /**
+     * Grado mínimo del B-árbol que determina el número mínimo de claves por nodo.
+     * Cada nodo (excepto la raíz) debe tener al menos t-1 claves.
+     */
+    private int t;
+    
+    /**
+     * Constructor que inicializa un B-árbol con el grado mínimo especificado.
+     * 
+     * @param gradoMinimo Grado mínimo del B-árbol (t >= 2)
+     */
+    public BArbol(int gradoMinimo) {
+        this.raiz = new NodoB(true);
+        this.t = gradoMinimo;
+    }
+
+    // ... (métodos de búsqueda y eliminación anteriores) ...
+
+    /**
+     * Inserta una nueva clave en el B-árbol manteniendo todas las propiedades.
+     * Maneja el crecimiento del árbol cuando la raíz se llena.
+     * 
+     * @param clave Clave a insertar en el árbol
+     * @return true si la inserción fue exitosa, false si la clave ya existe
+     */
+    public boolean insertar(int clave) {
+        System.out.println("\n=== INICIANDO INSERCIÓN DE CLAVE: " + clave + " ===");
+        
+        // Verificar si la clave ya existe
+        if (buscar(clave)) {
+            System.out.println("✗ Inserción fallida: clave " + clave + " ya existe en el árbol");
+            return false;
+        }
+        
+        NodoB raizActual = raiz;
+        
+        // Caso: la raíz está llena, necesita división
+        if (raizActual.claves.size() == (2 * t - 1)) {
+            System.out.println("★ Raíz llena detectada, creando nueva raíz");
+            
+            NodoB nuevaRaiz = new NodoB(false);
+            this.raiz = nuevaRaiz;
+            nuevaRaiz.ramas.add(raizActual);
+            
+            dividirRama(nuevaRaiz, 0);
+            insertarEnNoLleno(nuevaRaiz, clave);
+        } else {
+            insertarEnNoLleno(raizActual, clave);
+        }
+        
+        System.out.println("✓ Inserción completada exitosamente");
+        return true;
+    }
+    
+    /**
+     * Inserta una clave en un nodo que no está lleno.
+     * Realiza la inserción recursiva manteniendo el orden.
+     * 
+     * @param nodo Nodo donde insertar la clave
+     * @param clave Clave a insertar
+     */
+    private void insertarEnNoLleno(NodoB nodo, int clave) {
+        System.out.println("→ Insertando en nodo con " + nodo.claves.size() + " claves");
+        
+        int indice = nodo.claves.size() - 1;
+        
+        // Caso 1: Nodo es hoja - inserción directa
+        if (nodo.hoja) {
+            System.out.println("★ Insertando en nodo hoja");
+            
+            // Encontrar posición correcta e insertar manteniendo orden
+            while (indice >= 0 && clave < nodo.claves.get(indice)) {
+                indice--;
+            }
+            
+            nodo.claves.add(indice + 1, clave);
+            System.out.println("✓ Clave " + clave + " insertada en posición " + (indice + 1));
+        } 
+        // Caso 2: Nodo interno - descender recursivamente
+        else {
+            System.out.println("★ Nodo interno, buscando rama adecuada");
+            
+            // Encontrar la rama adecuada para descender
+            while (indice >= 0 && clave < nodo.claves.get(indice)) {
+                indice--;
+            }
+            indice++;
+            
+            System.out.println("→ Descendiendo por rama " + indice);
+            
+            // Verificar si el nodo hijo está lleno
+            if (nodo.ramas.get(indice).claves.size() == (2 * t - 1)) {
+                System.out.println("★ Rama " + indice + " llena, dividiendo");
+                dividirRama(nodo, indice);
+                
+                // Determinar en qué rama continuar después de la división
+                if (clave > nodo.claves.get(indice)) {
+                    indice++;
+                }
+            }
+            
+            insertarEnNoLleno(nodo.ramas.get(indice), clave);
+        }
+    }
+    
+    /**
+     * Divide un nodo hijo lleno en dos nodos.
+     * Promueve la clave media al padre y redistribuye las claves restantes.
+     * 
+     * @param padre Nodo padre del nodo a dividir
+     * @param indice Índice del nodo hijo a dividir
+     */
+    private void dividirRama(NodoB padre, int indice) {
+        System.out.println("★ Iniciando división de rama " + indice);
+        
+        NodoB nodoLleno = padre.ramas.get(indice);
+        NodoB nuevoNodo = new NodoB(nodoLleno.hoja);
+        
+        // La clave media será promovida al padre
+        int claveMedia = nodoLleno.claves.get(t - 1);
+        
+        System.out.println("→ Clave media a promover: " + claveMedia);
+        
+        // Mover claves superiores al nuevo nodo
+        for (int i = t; i < 2 * t - 1; i++) {
+            nuevoNodo.claves.add(nodoLleno.claves.get(i));
+        }
+        
+        // Mover ramas superiores al nuevo nodo si no es hoja
+        if (!nodoLleno.hoja) {
+            for (int i = t; i < 2 * t; i++) {
+                nuevoNodo.ramas.add(nodoLleno.ramas.get(i));
+            }
+            // Limpiar ramas movidas del nodo original
+            nodoLleno.ramas.subList(t, 2 * t).clear();
+        }
+        
+        // Limpiar claves movidas del nodo original
+        nodoLleno.claves.subList(t - 1, 2 * t - 1).clear();
+        
+        // Insertar la clave media en el padre
+        padre.claves.add(indice, claveMedia);
+        padre.ramas.add(indice + 1, nuevoNodo);
+        
+        System.out.println("✓ División completada:");
+        System.out.println("  - Nodo original ahora tiene " + nodoLleno.claves.size() + " claves");
+        System.out.println("  - Nuevo nodo tiene " + nuevoNodo.claves.size() + " claves");
+        System.out.println("  - Padre ahora tiene " + padre.claves.size() + " claves");
+    }
+    
+    /**
+     * Inserta múltiples claves en una sola operación.
+     * Útil para inicializar el árbol con datos de prueba.
+     * 
+     * @param claves Array de claves a insertar
+     * @return Número de claves insertadas exitosamente
+     */
+    public int insertarMultiples(int[] claves) {
+        System.out.println("\n=== INSERCIÓN MÚLTIPLE DE " + claves.length + " CLAVES ===");
+        
+        int exitosas = 0;
+        for (int clave : claves) {
+            if (insertar(clave)) {
+                exitosas++;
+            }
+        }
+        
+        System.out.println("★ Inserción múltiple completada: " + exitosas + 
+                          "/" + claves.length + " claves insertadas");
+        return exitosas;
+    }
+    
+    /**
+     * Construye un B-árbol balanceado insertando claves en orden óptimo.
+     * Método avanzado para crear árboles eficientes desde el inicio.
+     * 
+     * @param clavesOrdenadas Array de claves ordenadas para construcción óptima
+     */
+    public void construirArbolBalanceado(int[] clavesOrdenadas) {
+        System.out.println("\n=== CONSTRUYENDO ÁRBOL BALANCEADO ===");
+        System.out.println("★ Insertando " + clavesOrdenadas.length + " claves ordenadas");
+        
+        for (int clave : clavesOrdenadas) {
+            insertar(clave);
+        }
+        
+        System.out.println("✓ Construcción de árbol balanceado completada");
+    }
+    
+    /**
+     * Analiza las propiedades y estadísticas del B-árbol actual.
+     * Proporciona información detallada sobre el estado del árbol.
+     */
+    public void analizarArbol() {
+        System.out.println("\n=== ANÁLISIS DEL B-ÁRBOL ===");
+        System.out.println("Grado mínimo (t): " + t);
+        System.out.println("Máximo de claves por nodo: " + (2 * t - 1));
+        System.out.println("Mínimo de claves por nodo (no raíz): " + (t - 1));
+        
+        AnalisisResultado resultado = calcularEstadisticas(raiz);
+        
+        System.out.println("\n--- ESTADÍSTICAS ---");
+        System.out.println("Altura del árbol: " + resultado.altura);
+        System.out.println("Total de nodos: " + resultado.totalNodos);
+        System.out.println("Total de claves: " + resultado.totalClaves);
+        System.out.println("Nodos hoja: " + resultado.nodosHoja);
+        System.out.println("Nodos internos: " + resultado.nodosInternos);
+        System.out.println("Factor de carga promedio: " + 
+                          String.format("%.2f", resultado.factorCarga) + "%");
+        
+        System.out.println("\n--- PROPIEDADES ---");
+        boolean propiedades = verificarPropiedades();
+        System.out.println("Propiedades B-árbol: " + (propiedades ? "✓ CORRECTAS" : "✗ INCORRECTAS"));
+    }
+    
+    /**
+     * Clase auxiliar para almacenar resultados del análisis del árbol.
+     */
+    private static class AnalisisResultado {
+        int altura;
+        int totalNodos;
+        int totalClaves;
+        int nodosHoja;
+        int nodosInternos;
+        double factorCarga;
+    }
+    
+    /**
+     * Calcula estadísticas detalladas del árbol recursivamente.
+     * 
+     * @param nodo Nodo actual del análisis
+     * @return Objeto con todas las estadísticas calculadas
+     */
+    private AnalisisResultado calcularEstadisticas(NodoB nodo) {
+        AnalisisResultado resultado = new AnalisisResultado();
+        
+        if (nodo == null) {
+            return resultado;
+        }
+        
+        resultado.totalNodos = 1;
+        resultado.totalClaves = nodo.claves.size();
+        
+        if (nodo.hoja) {
+            resultado.nodosHoja = 1;
+            resultado.altura = 1;
+        } else {
+            resultado.nodosInternos = 1;
+            int maxAlturaHijos = 0;
+            
+            for (NodoB rama : nodo.ramas) {
+                AnalisisResultado statsHijo = calcularEstadisticas(rama);
+                resultado.totalNodos += statsHijo.totalNodos;
+                resultado.totalClaves += statsHijo.totalClaves;
+                resultado.nodosHoja += statsHijo.nodosHoja;
+                resultado.nodosInternos += statsHijo.nodosInternos;
+                maxAlturaHijos = Math.max(maxAlturaHijos, statsHijo.altura);
+            }
+            
+            resultado.altura = maxAlturaHijos + 1;
+        }
+        
+        // Calcular factor de carga promedio
+        if (resultado.totalNodos > 0) {
+            double maxClavesPosibles = resultado.totalNodos * (2 * t - 1);
+            resultado.factorCarga = (resultado.totalClaves / maxClavesPosibles) * 100;
+        }
+        
+        return resultado;
+    }
+    
+    /**
+     * Método principal para pruebas completas de funcionalidad.
+     * Demuestra inserción, búsqueda y eliminación integradas.
+     * 
+     * @param args Argumentos de línea de comandos (no usados)
+     */
+    public static void main(String[] args) {
+        // Crear B-árbol con grado mínimo 3
+        BArbol arbol = new BArbol(3);
+        
+        System.out.println("=== PRUEBAS COMPLETAS DE B-ÁRBOL ===");
+        System.out.println(arbol.obtenerInfoArbol());
+        
+        // Prueba de inserción múltiple
+        System.out.println("\n--- FASE 1: INSERCIÓN MÚLTIPLE ---");
+        int[] clavesPrueba = {10, 20, 5, 6, 12, 30, 7, 17, 3, 25, 8, 15};
+        arbol.insertarMultiples(clavesPrueba);
+        
+        // Mostrar estructura después de inserciones
+        arbol.mostrarArbol();
+        
+        // Análisis del árbol
+        arbol.analizarArbol();
+        
+        // Pruebas de búsqueda después de inserción
+        System.out.println("\n--- FASE 2: BÚSQUEDAS POST-INSERCIÓN ---");
+        arbol.buscar(15);
+        arbol.buscar(25);
+        arbol.buscar(100); // Clave que no existe
+        
+        // Pruebas de eliminación
+        System.out.println("\n--- FASE 3: ELIMINACIONES ---");
+        arbol.eliminar(6);
+        arbol.eliminar(17);
+        
+        // Mostrar estructura final
+        arbol.mostrarArbol();
+        
+        // Análisis final
+        System.out.println("\n--- ANÁLISIS FINAL ---");
+        arbol.analizarArbol();
+        
+        // Prueba de construcción balanceada
+        System.out.println("\n--- CONSTRUCCIÓN BALANCEADA ---");
+        BArbol arbolBalanceado = new BArbol(3);
+        int[] clavesBalanceadas = {5, 10, 15, 20, 25, 30, 35, 40, 45, 50};
+        arbolBalanceado.construirArbolBalanceado(clavesBalanceadas);
+        arbolBalanceado.mostrarArbol();
+        arbolBalanceado.analizarArbol();
+    }
+    
+    // ... (métodos getter y otros auxiliares) ...
+    
+    /**
+     * Obtiene la altura actual del B-árbol.
+     * 
+     * @return Altura del árbol (número de niveles)
+     */
+    public int obtenerAltura() {
+        return calcularAltura(raiz);
+    }
+    
+    /**
+     * Calcula recursivamente la altura del árbol.
+     * 
+     * @param nodo Nodo actual del cálculo
+     * @return Altura del subárbol
+     */
+    private int calcularAltura(NodoB nodo) {
+        if (nodo.hoja) {
+            return 1;
+        }
+        
+        int maxAltura = 0;
+        for (NodoB rama : nodo.ramas) {
+            maxAltura = Math.max(maxAltura, calcularAltura(rama));
+        }
+        
+        return maxAltura + 1;
+    }
+    
+    /**
+     * Verifica si el árbol está vacío.
+     * 
+     * @return true si el árbol no tiene claves, false en caso contrario
+     */
+    public boolean estaVacio() {
+        return raiz.claves.isEmpty();
+    }
+    
+    /**
+     * Obtiene el número total de claves en el árbol.
+     * 
+     * @return Total de claves almacenadas
+     */
+    public int obtenerTotalClaves() {
+        return contarClaves(raiz);
+    }
+    
+    /**
+     * Cuenta recursivamente todas las claves del árbol.
+     * 
+     * @param nodo Nodo actual del conteo
+     * @return Total de claves en el subárbol
+     */
+    private int contarClaves(NodoB nodo) {
+        int total = nodo.claves.size();
+        
+        if (!nodo.hoja) {
+            for (NodoB rama : nodo.ramas) {
+                total += contarClaves(rama);
+            }
+        }
+        
+        return total;
+    }
+}
